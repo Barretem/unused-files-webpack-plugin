@@ -1,18 +1,18 @@
-# unused-files-webpack-plugin
-> Glob all files that are not compiled by webpack under webpack's context
+# remove-unused-files-webpack-plugin
+> fork from unused-files-webpack-plugin。The main extension is to remove unused files.
 
 [![Version][npm-image]][npm-url] [![Travis CI][travis-image]][travis-url] [![Quality][codeclimate-maintainability-image]][codeclimate-maintainability-url] [![Coverage][codeclimate-c-image]][codeclimate-c-url] [![Dependencies][gemnasium-image]][gemnasium-url] [![Gitter][gitter-image]][gitter-url]
 
 Install with npm:
 
 ```bash
-npm i --save-dev unused-files-webpack-plugin
+npm i --save-dev @barretter/remove-unused-files-webpack-plugin
 ```
 
 Install with yarn:
 
 ```bash
-yarn add --dev unused-files-webpack-plugin
+yarn add --dev @barretter/remove-unused-files-webpack-plugin
 ```
 
 ## Usage
@@ -20,11 +20,11 @@ yarn add --dev unused-files-webpack-plugin
 ### `webpack.config.babel.js`
 
 ```js
-import UnusedFilesWebpackPlugin from "unused-files-webpack-plugin";
+import RemoveUnusedFilesWebpackPlugin from "@barretter/remove-unused-files-webpack-plugin";
 
 export default {
   plugins: [
-    new UnusedFilesWebpackPlugin(options),
+    new RemoveUnusedFilesWebpackPlugin(options),
   ],
 };
 ```
@@ -32,11 +32,11 @@ export default {
 ### `webpack.config.js`
 
 ```js
-const { UnusedFilesWebpackPlugin } = require("unused-files-webpack-plugin");
+const RemoveUnusedFilesWebpackPlugin = require("@barretter/remove-unused-files-webpack-plugin").default;
 
 module.exports = {
   plugins: [
-    new UnusedFilesWebpackPlugin(options),
+    new RemoveUnusedFilesWebpackPlugin(options),
   ],
 };
 ```
@@ -45,7 +45,7 @@ module.exports = {
 ## Options
 
 ```js
-new UnusedFilesWebpackPlugin(options)
+new RemoveUnusedFilesWebpackPlugin(options)
 ```
 
 ### options.patterns
@@ -83,6 +83,35 @@ Current working directory for glob. If you don't set explicitly, it defaults to 
 * Default: `webpackCompiler.context`
 * Pass to: [`options.cwd`](https://github.com/isaacs/node-glob#options)
 * See also: [`context` in webpack](https://webpack.js.org/configuration/entry-context/#context)
+
+#### options.removeToBackup
+
+Whether to move unused files to the backup folder. Use this feature with caution.
+
+* Default: `false`
+* Explicitly set it to `true` to enable this feature
+
+#### backupOptions.backUpDirPath
+
+Backup folder Path.
+
+* Default: `./.backup`
+* Only removeToBackup configuration to be `true`, This configuration item is valid.
+  
+#### backupOptions.backUpDirname
+
+Backup folder name.
+
+* Default: `The time when you run this plugin`
+* Only removeToBackup configuration to be `true`, This configuration item is valid.
+
+#### backupOptions.overwrite
+
+Whether to overwrite older files when the backup folder exit the same file
+
+* Default: `false`
+* Explicitly set it to `true` to enable this feature
+* Only removeToBackup configuration to be `true`, This configuration item is valid.
 
 
 ## Contributing
