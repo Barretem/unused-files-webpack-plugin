@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+<a name="3.5.0"></a>
+# [3.5.0](https://github.com/Barretem/unused-files-webpack-plugin/compare/v3.4.0...v3.5.0) (2021-10-11)
+
+
+### Features
+
+* 🎸 rollback package.json version ([9270660](https://github.com/Barretem/unused-files-webpack-plugin/commit/9270660))
+* add remove unused file feature ([296b8bb](https://github.com/Barretem/unused-files-webpack-plugin/commit/296b8bb))
+
+
+
 <a name="3.4.0"></a>
 # [3.4.0](https://github.com/tomchentw/unused-files-webpack-plugin/compare/v3.3.0...v3.4.0) (2018-03-14)
 
