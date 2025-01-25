@@ -67,7 +67,7 @@ async function applyAfterEmit(compiler, compilation, plugin) {
             ),
           );
         }
-  
+
         await Promise.all(promiseAll)
           .then(() => {
             console.log(`${warnPrefix} move to ${backupDir}`);
