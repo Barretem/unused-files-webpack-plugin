@@ -1,23 +1,24 @@
+import { expect, describe, it } from 'vitest'
 import path from "path";
 import MemoryFS from "memory-fs";
 import webpack from "webpack";
-import UnusedFilesWebpackPlugin from "../index";
+import UnusedFilesWebpackPlugin from "../src/index";
 
 const EXPECTED_FILENAME_LIST = [
   `CHANGELOG.md`,
   `README.md`,
-  `src/__tests__/index.spec.js`,
+  `__tests__/index.spec.js`,
   `package.json`
 ];
 
 describe(`UnusedFilesWebpackPlugin module`, () => {
   it(
     `should work as expected`,
-    done => {
+    async () => {
       const compiler = webpack({
-        context: path.resolve(__dirname, `../../`),
+        context: path.resolve(__dirname, `../`),
         entry: {
-          UnusedFilesWebpackPlugin: path.resolve(__dirname, `../index.js`)
+          UnusedFilesWebpackPlugin: path.resolve(__dirname, `../src/index.ts`)
         },
         output: {
           path: __dirname // It will be in MemoryFS :)
@@ -25,24 +26,24 @@ describe(`UnusedFilesWebpackPlugin module`, () => {
         plugins: [new UnusedFilesWebpackPlugin()]
       });
       compiler.outputFileSystem = new MemoryFS();
+      await new Promise((resolve, reject) => {
+        compiler.run((err, stats) => {
+          expect(err).toBeFalsy();
 
-      compiler.run((err, stats) => {
-        expect(err).toBeFalsy();
+          const { warnings } = stats.compilation;
+          expect(warnings).toHaveLength(1);
 
-        const { warnings } = stats.compilation;
-        expect(warnings).toHaveLength(1);
+          const [unusedFilesError] = warnings;
+          expect(unusedFilesError).toBeInstanceOf(Error);
 
-        const [unusedFilesError] = warnings;
-        expect(unusedFilesError).toBeInstanceOf(Error);
-
-        const { message } = unusedFilesError;
-        const containsExpected = EXPECTED_FILENAME_LIST.every(filename =>
-          message.match(filename)
-        );
-        expect(containsExpected).toBeTruthy();
-
-        done();
-      });
+          const { message } = unusedFilesError;
+          console.log('%c [ message ]-40', 'font-size:13px; background:pink; color:#bf2c9f;', message)
+          const containsExpected = EXPECTED_FILENAME_LIST.every(filename =>
+            message.match(filename)
+          );
+          expect(containsExpected).toBeTruthy();
+        });
+      })
     },
     10000
   );
@@ -61,7 +62,7 @@ describe(`UnusedFilesWebpackPlugin module`, () => {
           },
           plugins: [
             new UnusedFilesWebpackPlugin({
-              pattern: "src/**/*.*"
+              include: ["src/**/*.*"]
             })
           ]
         });
@@ -86,7 +87,7 @@ describe(`UnusedFilesWebpackPlugin module`, () => {
     );
   });
 
-  describe(`options.patterns`, () => {
+  describe(`options.include`, () => {
     it(
       `should work as expected for a single pattern`,
       done => {
@@ -100,7 +101,7 @@ describe(`UnusedFilesWebpackPlugin module`, () => {
           },
           plugins: [
             new UnusedFilesWebpackPlugin({
-              patterns: ["src/**/*.*"]
+              include: ["src/**/*.*"]
             })
           ]
         });
@@ -137,7 +138,7 @@ describe(`UnusedFilesWebpackPlugin module`, () => {
           },
           plugins: [
             new UnusedFilesWebpackPlugin({
-              patterns: ["src/**/*.*", "!**/__snapshots__/**/*.*"]
+              include: ["src/**/*.*", "!**/__snapshots__/**/*.*"]
             })
           ]
         });

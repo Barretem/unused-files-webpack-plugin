@@ -1,113 +1,121 @@
 import path from 'path';
-import warning from 'warning';
-import { glob } from 'glob';
-import promisify from 'util.promisify';
-import fs from 'fs-extra';
-import type { Compiler, Compilation } from 'webpack';
-import type { IUnusedFilesWebpackPluginOptions } from './types';
-import type { GlobOptionsWithFileTypesFalse } from 'glob';
+import glob from 'fast-glob';
+import { getCurrentTimeStr, moveUnusedFileByPath } from './utils';
+import type { ICompiler, ICompilation, IUnusedFilesWebpackPluginOptions, IWebpackError } from './types';
 
-const getFileDepsList = (compilation: Compilation): string[] => {
-  let filePath: string[] = [];
-  const { fileDependencies, assets } = compilation;
-  fileDependencies.forEach((item) => {
-    // 检查该路径是否是文件
-    if (fs.statSync(item).isFile()) {
-      filePath.push(item);
-    }
-  });
-  return filePath;
-};
+export default class UnusedFilesWebpackPlugin {
+  private readonly options: IUnusedFilesWebpackPluginOptions;
+  constructor(options?: Partial<IUnusedFilesWebpackPluginOptions>) {
+    const backUpDirname = getCurrentTimeStr();
+    const backupOptions = options?.backupOptions;
+    this.options = {
+      ...options,
+      include: options?.include ?? ['src/**/*.*'],
+      exclude: options?.exclude ?? ['node_modules/**/*'],
+      failOnUnused: options?.failOnUnused === true,
+      backupOptions: {
+        remove: !!options?.backupOptions?.remove,
+        dirPath: backupOptions?.dirPath ?? './.backup',
+        dirname: backupOptions?.dirname ?? backUpDirname,
+        overwrite: backupOptions?.overwrite ?? false,
+      },
+      globOptions: options?.globOptions || {},
+    };
+  }
 
-const getAllFilesPath = async (
-  path: string | string[],
-  globOptions: GlobOptionsWithFileTypesFalse,
-) => {
-  const files = await glob(path, globOptions);
-  return files;
-};
+  apply(compiler: ICompiler) {
+    compiler.hooks.afterEmit.tapPromise('UnusedFilesWebpackPlugin', (compilation) =>
+      applyAfterEmit(compiler, compilation, this.options),
+    );
+  }
+}
 
 async function applyAfterEmit(
-  compiler: Compiler,
-  compilation: Compilation,
+  compiler: ICompiler,
+  compilation: ICompilation,
   options: IUnusedFilesWebpackPluginOptions,
 ) {
+  const { globOptions: _globOptions, backupOptions, failOnUnused } = options;
   try {
     const globOptions = {
       cwd: compiler.context,
-      ignore: options.ignores,
+      ..._globOptions,
     };
-    // 获取文件夹中所有的文件
-    const files = await getAllFilesPath(options.patterns, globOptions);
-    console.log(
-      '%c [ files ]-34',
-      'font-size:13px; background:pink; color:#bf2c9f;',
-      files,
-    );
-    // 获取打包中引用到的文件
-    const fileDeps = getFileDepsList(compilation);
-    const unused = files.filter(
-      (item) => !fileDeps.includes(path.join(globOptions.cwd, item)),
-    );
+    // 使用到的文件map
+    const fileDepsMap = getFileDepsMap(compiler, compilation);
+    // 获取所有文件
+    const files = await getIncludeFiles(options);
+    const unused = files.filter((it) => !fileDepsMap.has(it));
+
     const warnPrefix = 'UnusedFilesWebpackPlugin found some unused files';
 
-    if (unused.length !== 0) {
-      if (options.removeToBackup) {
-        const { backUpDirPath, backUpDirname, overwrite } =
-          options.backupOptions;
-        const backupDir = path.join(
-          globOptions.cwd,
-          backUpDirPath,
-          backUpDirname,
+    if (unused.length === 0) return;
+    const { remove, dirPath, dirname, overwrite } = backupOptions;
+
+    if (remove) {
+      const backupDir = path.join(globOptions.cwd, dirPath, dirname);
+      const promiseAll: Array<Promise<void>> = [];
+      unused.forEach((item) => {
+        const fileRelativePath = path.dirname(item).replace(globOptions.cwd, '');
+        promiseAll.push(
+          moveUnusedFileByPath({
+            fromPath: item,
+            toDirPath: path.join(backupDir, fileRelativePath),
+            overwrite,
+          }),
         );
-        const promiseAll = [];
-        for (const i in unused) {
-          const dirName = unused[i].slice(0, unused[i].lastIndexOf('/'));
-          const fileName = unused[i].slice(unused[i].lastIndexOf('/') + 1);
-          promiseAll.push(
-            moveUnusedFileByPath(
-              path.join(globOptions.cwd, unused[i]),
-              path.join(backupDir, `./${dirName}`),
-              fileName,
-              overwrite,
-            ),
-          );
-        }
+      });
 
-        await Promise.all(promiseAll)
-          .then(() => {
-            console.log(`${warnPrefix} move to ${backupDir}`);
-          })
-          .catch(() => {
-            throw new Error(`
-${warnPrefix} move failed:
-${unused.join(`\n`)}`);
-});
-      } else {
-        throw new Error(`
+      await Promise.all(promiseAll);
+      console.log(`${warnPrefix} move to ${backupDir}`);
+    } else {
+      throw new Error(`
 ${warnPrefix}:
-${unused.join(`\n`)}`);
-      }
+${unused.join('\n')}`);
     }
-  } catch (error) {}
-}
-
-class UnusedFilesWebpackPlugin {
-  private readonly options: IUnusedFilesWebpackPluginOptions;
-  constructor(options: Partial<IUnusedFilesWebpackPluginOptions>) {
-    this.options = {
-      ...options,
-      patterns: options?.patterns || [`**/*.*`],
-      ignores: options?.ignores || [],
-    };
-  }
-
-  apply(compiler: Compiler) {
-    compiler.hooks.afterEmit.tapPromise(
-      `UnusedFilesWebpackPlugin`,
-      (compilation) => applyAfterEmit(compiler, compilation, this.options),
-    );
+  } catch (err) {
+    const error = err as IWebpackError;
+    console.log(error);
+    if (failOnUnused && compilation.bail) {
+      throw error;
+    }
+    const errorsList = failOnUnused ? compilation.errors : compilation.warnings;
+    errorsList.push(error);
   }
 }
 
-export default UnusedFilesWebpackPlugin;
+/**
+ * 获取文件依赖关系map
+ * @param compiler webpack compiler
+ * @param compilation webpack compilation
+ * @returns key: 绝对文件路径 value: true
+ */
+function getFileDepsMap(compiler: ICompiler, compilation: ICompilation) {
+  const resMap = Array.from<string>(compilation.fileDependencies).reduce(
+    (total: Map<string, boolean>, usedFilePath) => {
+      total.set(usedFilePath, true);
+      return total;
+    },
+    new Map(),
+  );
+
+  compilation.getAssets().forEach((asset) => {
+    const sourceFilename = asset.info?.sourceFilename;
+    if (sourceFilename) {
+      const sourcePath = path.resolve(compiler.context, sourceFilename);
+      resMap.set(sourcePath, true);
+    }
+  });
+
+  return resMap;
+}
+
+/**
+ * 获取指定目录下的所有指定文件
+ * @param options
+ */
+function getIncludeFiles(options: IUnusedFilesWebpackPluginOptions) {
+  const { include, exclude } = options;
+  const fileList = include.concat(exclude.map((item) => `!${item}`));
+  return glob.sync(fileList, options.globOptions).map((filePath) => path.resolve(process.cwd(), filePath));
+}
