@@ -14,8 +14,9 @@ const EXPECTED_FILENAME_LIST = [
 describe(`UnusedFilesWebpackPlugin module`, () => {
   it(
     `should work as expected`,
-    async () => {
+    (done) => {
       const compiler = webpack({
+        mode: 'production',
         context: path.resolve(__dirname, `../`),
         entry: {
           UnusedFilesWebpackPlugin: path.resolve(__dirname, `../src/index.ts`)
@@ -26,24 +27,22 @@ describe(`UnusedFilesWebpackPlugin module`, () => {
         plugins: [new UnusedFilesWebpackPlugin()]
       });
       compiler.outputFileSystem = new MemoryFS();
-      await new Promise((resolve, reject) => {
-        compiler.run((err, stats) => {
-          expect(err).toBeFalsy();
+      compiler.run((err, stats) => {
+        expect(err).toBeFalsy();
 
-          const { warnings } = stats.compilation;
-          expect(warnings).toHaveLength(1);
+        const { warnings } = stats.compilation;
+        expect(warnings).toHaveLength(1);
 
-          const [unusedFilesError] = warnings;
-          expect(unusedFilesError).toBeInstanceOf(Error);
+        const [unusedFilesError] = warnings;
+        expect(unusedFilesError).toBeInstanceOf(Error);
 
-          const { message } = unusedFilesError;
-          console.log('%c [ message ]-40', 'font-size:13px; background:pink; color:#bf2c9f;', message)
-          const containsExpected = EXPECTED_FILENAME_LIST.every(filename =>
-            message.match(filename)
-          );
-          expect(containsExpected).toBeTruthy();
-        });
-      })
+        const { message } = unusedFilesError;
+        const containsExpected = EXPECTED_FILENAME_LIST.every(filename =>
+          message.match(filename)
+        );
+        expect(containsExpected).toBeTruthy();
+        done();
+      });
     },
     10000
   );
