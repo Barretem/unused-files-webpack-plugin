@@ -28,7 +28,7 @@
     "webpack-plugin"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc src/*.ts --outDir dist",
     "dev": "tsc --watch",
     "lint": "eslint ./src --ext .js,.ts",
     "test": "vitest",

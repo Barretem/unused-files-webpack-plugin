@@ -1,4 +1,4 @@
-import type FastGlob from 'fast-glob';
+import type * as FastGlob from 'fast-glob';
 import type { Compiler, Compilation, WebpackError } from 'webpack';
 
 export interface IUnusedFilesWebpackPluginOptions {
