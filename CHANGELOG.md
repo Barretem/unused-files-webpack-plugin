@@ -1,5 +1,11 @@
 # Change Log
 
+## 4.0.1
+
+### Patch Changes
+
+- 8435493: add update guide from v3 to v4
+
 ## 4.0.0
 
 ### Major Changes
