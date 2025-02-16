@@ -1,5 +1,11 @@
 # Change Log
 
+## 4.0.2
+
+### Patch Changes
+
+- 165443b: update readme
+
 ## 4.0.1
 
 ### Patch Changes
