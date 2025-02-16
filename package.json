@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/Barretem/unused-files-webpack-plugin/",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "keywords": [
     "remove",
     "unused",
@@ -28,7 +29,7 @@
     "webpack-plugin"
   ],
   "scripts": {
-    "build": "tsc src/*.ts --outDir dist",
+    "build": "rimraf dist & tsc",
     "dev": "tsc --watch",
     "lint": "eslint ./src --ext .js,.ts",
     "test": "vitest",
@@ -54,6 +55,7 @@
     "lint-staged": "^15.4.2",
     "memory-fs": "^0.5.0",
     "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
     "typescript": "^5.7.3",
     "vitest": "^3.0.5",
     "webpack": "^5.97.1",

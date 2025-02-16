@@ -75,7 +75,6 @@ ${unused.join('\n')}`);
     }
   } catch (err) {
     const error = err as IWebpackError;
-    console.log(error);
     if (failOnUnused && compilation.bail) {
       throw error;
     }

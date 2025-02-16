@@ -10,6 +10,6 @@
     "lib": ["es6", "es2017"],
     "esModuleInterop": true
   },
-  "include": ["./src/**/*", "__tests__", "__tests__"],
+  "include": ["./src/**/*"],
   "exclude": ["node_modules"]
 }
