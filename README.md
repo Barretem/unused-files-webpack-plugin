@@ -4,7 +4,7 @@ This plugin only supports webpack versions above 4.
 
 > fork from unused-files-webpack-plugin。The main extension is to remove unused files.
 
-[![Version][npm-image]][npm-url] [![Travis CI][travis-image]][travis-url] [![Quality][codeclimate-maintainability-image]][codeclimate-maintainability-url] [![Coverage][codeclimate-c-image]][codeclimate-c-url] [![Dependencies][gemnasium-image]][gemnasium-url] [![Gitter][gitter-image]][gitter-url]
+[![Version][npm-image]][npm-url]
 
 Install with npm:
 
